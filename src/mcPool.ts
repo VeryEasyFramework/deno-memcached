@@ -15,6 +15,11 @@ class MemcachedPoolClient {
     }
 }
 
+/**
+ * Memcached connection pool. This is a wrapper around MemcachedClient.
+ * This will create a pool of connections to the memcached server, and handles
+ * assigning available connections to requests.
+ */
 export class MemcachedPool {
     private clients: MemcachedPoolClient[] = [];
 

@@ -20,6 +20,13 @@ const getFlagMap: GetFlagMap = {
   value: "v", // return item value in <data block>
 };
 
+/**
+ * The main Memcached client class.
+ * Used to interact with a Memcached server over TCP or Unix sockets.
+ *
+ * It sets and gets values from the server as strings, JSON objects, or lists.
+ */
+
 export class MemcachedClient {
   connection!: Deno.Conn;
   buffSize: number = 1024;

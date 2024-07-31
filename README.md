@@ -2,6 +2,9 @@
 
 A memcached client for Deno
 
+> Please note that this is a work in progress! There may be missing
+> functionality and/or breaking changes from version to version.
+
 ## Usage
 
 ```typescript
