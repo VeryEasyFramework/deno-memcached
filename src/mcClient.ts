@@ -50,7 +50,7 @@ export class MemcachedClient {
     };
   }
 
-  get connected() {
+  get connected(): boolean {
     return this.connection !== undefined;
   }
 
