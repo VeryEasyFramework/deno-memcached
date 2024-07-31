@@ -4,3 +4,5 @@ export type {
   MemcachedClientConfig,
   MemcachedPoolConfig,
 } from "./src/mcTypes.ts";
+
+export type { MemcachedError } from "./src/mcError.ts";

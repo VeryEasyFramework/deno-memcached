@@ -24,46 +24,50 @@ export class MemcachedClient {
   connection!: Deno.Conn;
   buffSize: number = 1024;
   buffer: Uint8Array;
-  private decoder = new TextDecoder();
-  private encoder = new TextEncoder();
-  parser = new MemcachedParser();
+  private decoder: TextDecoder = new TextDecoder();
+  private encoder: TextEncoder = new TextEncoder();
+  parser: MemcachedParser = new MemcachedParser();
+  options: Deno.ConnectOptions | Deno.UnixConnectOptions;
 
-  constructor() {
-    console.log("MemcacheClient");
+  constructor(options?: MemcachedClientConfig) {
+    if ((options?.port || options?.host) && options?.unixPath) {
+      throw new Error("Cannot use both unixPath and host/port");
+    }
+
     this.buffer = new Uint8Array(this.buffSize);
+
+    if (options?.unixPath) {
+      this.options = {
+        transport: "unix",
+        path: options.unixPath,
+      };
+      return;
+    }
+
+    this.options = {
+      port: options?.port || 11211,
+      hostname: options?.host || "127.0.0.1",
+    };
   }
 
-  decode(buf: Uint8Array) {
+  get connected() {
+    return this.connection !== undefined;
+  }
+
+  private decode(buf: Uint8Array): string {
     return this.decoder.decode(buf);
   }
 
-  encode(str: string) {
+  private encode(str: string): Uint8Array {
     return this.encoder.encode(str);
   }
 
-  async connect(options?: MemcachedClientConfig) {
-    if (options?.unixPath) {
-      if (options.host || options.port) {
-        throw new Error("Cannot use both unixPath and host/port");
-      }
-      this.connection = await Deno.connect({
-        transport: "unix",
-        path: options.unixPath,
-      });
-    }
-    if (options?.port || options?.host || !options) {
-      if (options?.unixPath) {
-        throw new Error("Cannot use both unixPath and host/port");
-      }
-
-      this.connection = await Deno.connect({
-        port: options?.port || 11211,
-        hostname: options?.host || "localhost",
-      });
-    }
+  private async connect(): Promise<void> {
+    if (this.connected) return;
+    this.connection = await Deno.connect(this.options as Deno.ConnectOptions);
   }
 
-  async readAll() {
+  private async readAll(): Promise<Uint8Array> {
     let data: Uint8Array = new Uint8Array();
     let readCount = 0;
     while (readCount !== -1) {
@@ -78,21 +82,30 @@ export class MemcachedClient {
     return data;
   }
 
-  async response() {
+  private async response(): Promise<string | undefined> {
     const data = await this.readAll();
 
     return this.parser.parse(data);
   }
 
-  async set(table: string, id: string, value: string) {
+  async set(
+    table: string,
+    id: string,
+    value: string,
+  ): Promise<string | undefined> {
+    await this.connect();
     const key = `${table}${id}`;
     const data = this.encode(`ms ${key} ${value.length}\r\n${value}\r\n`);
-    const writeCount = await this.connection.write(data);
-    console.log({ writeCount });
+    await this.connection.write(data);
     return await this.response();
   }
 
-  async get(table: string, id: string, options?: GetOptions) {
+  async get(
+    table: string,
+    id: string,
+    options?: GetOptions,
+  ): Promise<string | undefined> {
+    await this.connect();
     let flags: string[] = [];
     if (!options) options = { value: true };
     if (options) {
@@ -112,23 +125,34 @@ export class MemcachedClient {
     return await this.response();
   }
 
-  async setJson(table: string, id: string, value: Record<string, any>) {
+  async setJson(
+    table: string,
+    id: string,
+    value: Record<string, any>,
+  ): Promise<string | undefined> {
+    await this.connect();
     const json = JSON.stringify(value);
     return await this.set(table, id, json);
   }
 
-  async getJson(table: string, id: string) {
+  async getJson(
+    table: string,
+    id: string,
+  ): Promise<Record<string, any> | null> {
+    await this.connect();
     const response = await this.get(table, id);
     if (!response) return null;
     return JSON.parse(response);
   }
 
-  async setList(listId: string, value: any[]) {
+  async setList<T>(listId: string, value: T[]): Promise<string | undefined> {
+    await this.connect();
     const json = JSON.stringify(value);
     return await this.set("list", listId, json);
   }
 
-  async getList(listId: string) {
+  async getList<T>(listId: string): Promise<T[] | null> {
+    await this.connect();
     const response = await this.get("list", listId);
     if (!response) return null;
     return JSON.parse(response);

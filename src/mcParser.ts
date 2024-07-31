@@ -10,7 +10,7 @@ export class MemcachedParser {
   position = 0;
   length = 0;
 
-  parse(data: Uint8Array) {
+  parse(data: Uint8Array): string | undefined {
     this.position = 0;
     this.length = data.byteLength;
     this.data = data;
@@ -30,7 +30,7 @@ export class MemcachedParser {
     }
   }
 
-  readValue() {
+  readValue(): string {
     const valueLength = this.readNext();
     const flags: string[] = [];
     while (true) {
@@ -43,7 +43,7 @@ export class MemcachedParser {
     return this.decode(value);
   }
 
-  read(count: number) {
+  read(count: number): Uint8Array {
     if (this.position + count > this.length) {
       throw new MemcachedError("Out of bounds");
     }
@@ -53,11 +53,11 @@ export class MemcachedParser {
     return result;
   }
 
-  readString(count: number) {
+  readString(count: number): string {
     return this.decode(this.read(count));
   }
 
-  readNext() {
+  readNext(): string | undefined {
     const delimiters = [32, 13, 10];
     const start = this.position;
     const current = new Uint8Array(1);
@@ -80,13 +80,13 @@ export class MemcachedParser {
       }
       if (delimiters.includes(current[0])) {
         if (current[0] === 10) {
-          return false;
+          return;
         }
       }
     }
   }
 
-  decode(buf: Uint8Array) {
+  decode(buf: Uint8Array): string {
     return this.decoder.decode(buf);
   }
 }

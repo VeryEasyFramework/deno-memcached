@@ -2,5 +2,5 @@
   "name": "@eveffer/deno-memcached",
   "version": "0.1.0",
   "exports": "./mod.ts",
-  "exclude": ["dev.ts", ".github"]
+  "exclude": [".github"]
 }
