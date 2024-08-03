@@ -8,7 +8,7 @@ A memcached client for Deno
 ## Usage
 
 ```typescript
-import { Memcached } from "@eveffer/deno-memcached";
+import { Memcached } from "@vef/deno-memcached";
 ```
 
 > Note: The default host and port are `127.0.0.1` and `11211` respectively.
